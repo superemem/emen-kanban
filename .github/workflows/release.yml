@@ -30,55 +30,63 @@ jobs:
         with:
           workspaces: './src-tauri -> target'
 
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli --version "^2" --locked
+
       - name: Install frontend deps
         run: npm ci
 
-      - name: Build & Release (Tauri Action)
-        uses: tauri-apps/tauri-action@action-v0.6.2
+      - name: Build Tauri (with signing)
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-        with:
-          tagName: ${{ github.ref_name }}
-          releaseName: 'Emen Kanban ${{ github.ref_name }}'
-          releaseBody: 'Lihat assets di bawah buat install. Auto-update bakal otomatis ke user existing.'
-          releaseDraft: false
-          prerelease: false
-          args: --target aarch64-apple-darwin
+        run: cargo tauri build --target aarch64-apple-darwin
 
-      - name: Upload .sig + generate latest.json
+      - name: Verify artifacts + create release + upload all
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
 
-          BUNDLE_DIR="src-tauri/target/aarch64-apple-darwin/release/bundle/macos"
-          SIG_FILE="${BUNDLE_DIR}/Emen-Kanban.app.tar.gz.sig"
+          VERSION="${GITHUB_REF_NAME#v}"
+          BUNDLE_MACOS="src-tauri/target/aarch64-apple-darwin/release/bundle/macos"
+          BUNDLE_DMG="src-tauri/target/aarch64-apple-darwin/release/bundle/dmg"
+
+          echo "=== Bundle contents (macos) ==="
+          ls -la "$BUNDLE_MACOS"
+          echo "=== Bundle contents (dmg) ==="
+          ls -la "$BUNDLE_DMG"
+
+          DMG_FILE=$(ls "$BUNDLE_DMG"/*.dmg | head -1)
+          TAR_FILE="$BUNDLE_MACOS/Emen-Kanban.app.tar.gz"
+          SIG_FILE="$TAR_FILE.sig"
 
           if [ ! -f "$SIG_FILE" ]; then
-            echo "Sig file gak ada di: $SIG_FILE"
-            ls -la "$BUNDLE_DIR"
+            echo "❌ Sig file gak ada. Build mungkin gak signed."
             exit 1
           fi
 
+          # Stage assets dengan nama final
+          STAGE_DIR="/tmp/release-stage"
+          mkdir -p "$STAGE_DIR"
+
+          DMG_NAME="Emen-Kanban_${VERSION}_aarch64.dmg"
+          TAR_NAME="Emen-Kanban_aarch64.app.tar.gz"
+          SIG_NAME="Emen-Kanban_aarch64.app.tar.gz.sig"
+
+          cp "$DMG_FILE" "$STAGE_DIR/$DMG_NAME"
+          cp "$TAR_FILE" "$STAGE_DIR/$TAR_NAME"
+          cp "$SIG_FILE" "$STAGE_DIR/$SIG_NAME"
+
+          # Generate latest.json
           SIG_CONTENT=$(cat "$SIG_FILE")
-          VERSION="${GITHUB_REF_NAME#v}"
           PUB_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-          NOTES="Update v${VERSION} - lihat commit history buat detail."
+          DOWNLOAD_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/${TAR_NAME}"
 
-          # Upload sig as proper asset name (matching tar.gz)
-          SIG_ASSET_NAME="Emen-Kanban_aarch64.app.tar.gz.sig"
-          cp "$SIG_FILE" "/tmp/${SIG_ASSET_NAME}"
-          gh release upload "$GITHUB_REF_NAME" "/tmp/${SIG_ASSET_NAME}" --clobber
-
-          # Build latest.json
-          DOWNLOAD_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/Emen-Kanban_aarch64.app.tar.gz"
-
-          cat > /tmp/latest.json <<EOF
+          cat > "$STAGE_DIR/latest.json" <<EOF
           {
             "version": "${VERSION}",
-            "notes": "${NOTES}",
+            "notes": "Update v${VERSION}",
             "pub_date": "${PUB_DATE}",
             "platforms": {
               "darwin-aarch64": {
@@ -90,7 +98,21 @@ jobs:
           EOF
 
           echo "=== latest.json ==="
-          cat /tmp/latest.json
+          cat "$STAGE_DIR/latest.json"
 
-          gh release upload "$GITHUB_REF_NAME" /tmp/latest.json --clobber
-          echo "✅ Uploaded sig + latest.json"
+          # Create release if gak ada, kalo ada lewat
+          if ! gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release create "$GITHUB_REF_NAME" \
+              --title "Emen Kanban $GITHUB_REF_NAME" \
+              --notes "Auto-generated release. App existing bakal auto-detect update."
+          fi
+
+          # Upload semua assets
+          gh release upload "$GITHUB_REF_NAME" \
+            "$STAGE_DIR/$DMG_NAME" \
+            "$STAGE_DIR/$TAR_NAME" \
+            "$STAGE_DIR/$SIG_NAME" \
+            "$STAGE_DIR/latest.json" \
+            --clobber
+
+          echo "✅ Done — release $GITHUB_REF_NAME live"
