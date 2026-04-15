@@ -154,7 +154,7 @@
             class="w-full px-3 py-2 text-sm border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent bg-white"
           >
             {#each COLUMNS as col}
-              <option value={col.id}>{col.icon} {col.label}</option>
+              <option value={col.id}>{col.label}</option>
             {/each}
           </select>
         </div>
