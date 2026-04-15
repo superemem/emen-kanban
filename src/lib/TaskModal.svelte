@@ -1,5 +1,6 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
+  import { X, Trash2 } from "@lucide/svelte";
   import type { Task, NewTaskInput, UpdateTaskInput } from "./types";
   import { COLUMNS } from "./types";
 
@@ -108,10 +109,10 @@
       <button
         type="button"
         onclick={onClose}
-        class="text-neutral-400 hover:text-neutral-700 text-xl leading-none"
+        class="text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors"
         aria-label="Close"
       >
-        ×
+        <X size={18} strokeWidth={2} />
       </button>
     </div>
 
@@ -197,8 +198,9 @@
           type="button"
           onclick={deleteTask}
           disabled={deleting || saving}
-          class="text-xs font-medium text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 px-3 py-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-950 transition-colors disabled:opacity-50"
+          class="text-xs font-medium text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 px-3 py-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-950 transition-colors disabled:opacity-50 inline-flex items-center gap-1.5"
         >
+          <Trash2 size={14} strokeWidth={2} />
           {deleting ? "Menghapus..." : "Hapus"}
         </button>
       {:else}

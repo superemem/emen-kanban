@@ -2,6 +2,7 @@
   import { invoke } from "@tauri-apps/api/core";
   import { open } from "@tauri-apps/plugin-dialog";
   import { onMount } from "svelte";
+  import { X, FolderOpen, TriangleAlert } from "@lucide/svelte";
 
   let { onClose, onChanged }: { onClose: () => void; onChanged: () => void } = $props();
 
@@ -71,10 +72,10 @@
       <button
         type="button"
         onclick={onClose}
-        class="text-neutral-400 hover:text-neutral-700 text-xl leading-none"
+        class="text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors"
         aria-label="Close"
       >
-        ×
+        <X size={18} strokeWidth={2} />
       </button>
     </div>
 
@@ -96,9 +97,10 @@
           <button
             type="button"
             onclick={browse}
-            class="text-xs font-medium text-neutral-700 dark:text-neutral-300 px-3 py-2 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 transition-colors"
+            class="text-xs font-medium text-neutral-700 dark:text-neutral-300 px-3 py-2 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 transition-colors inline-flex items-center gap-1.5"
           >
-            Browse...
+            <FolderOpen size={14} strokeWidth={2} />
+            Browse
           </button>
         </div>
       </div>
@@ -109,9 +111,10 @@
         </div>
       {/if}
 
-      <div class="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-900 rounded-md p-3">
+      <div class="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-900 rounded-md p-3 flex items-start gap-2">
+        <TriangleAlert size={14} strokeWidth={2} class="text-amber-700 dark:text-amber-400 mt-0.5 shrink-0" />
         <p class="text-xs text-amber-800 dark:text-amber-300">
-          ⚠️ Restart app supaya file watcher track folder baru.
+          Restart app supaya file watcher track folder baru.
         </p>
       </div>
     </div>

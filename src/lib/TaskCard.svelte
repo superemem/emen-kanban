@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Task } from "./types";
+  import { Calendar, Hash } from "@lucide/svelte";
 
   let { task, onclick }: { task: Task; onclick?: () => void } = $props();
 
@@ -49,9 +50,9 @@
       <div class="flex gap-1 flex-wrap">
         {#each task.tags as tag}
           <span
-            class="text-[10px] px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 font-medium"
+            class="text-[10px] px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 font-medium inline-flex items-center gap-0.5"
           >
-            #{tag}
+            <Hash size={10} strokeWidth={2.5} />{tag}
           </span>
         {/each}
       </div>
@@ -59,7 +60,7 @@
 
     {#if task.due_date}
       <span
-        class="text-[10px] font-medium px-1.5 py-0.5 rounded ml-auto"
+        class="text-[10px] font-medium px-1.5 py-0.5 rounded ml-auto inline-flex items-center gap-1"
         class:bg-red-50={isOverdue(task.due_date) && task.status !== "done"}
         class:dark:bg-red-950={isOverdue(task.due_date) && task.status !== "done"}
         class:text-red-600={isOverdue(task.due_date) && task.status !== "done"}
@@ -73,6 +74,7 @@
         class:text-neutral-500={!isDueSoon(task.due_date) && !isOverdue(task.due_date)}
         class:dark:text-neutral-400={!isDueSoon(task.due_date) && !isOverdue(task.due_date)}
       >
+        <Calendar size={10} strokeWidth={2.5} />
         {formatDate(task.due_date)}
       </span>
     {/if}

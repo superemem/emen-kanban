@@ -9,8 +9,17 @@ permissions:
   contents: write
 
 jobs:
-  build-macos:
-    runs-on: macos-latest
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest
+            target: aarch64-apple-darwin
+          - platform: macos-13
+            target: x86_64-apple-darwin
+
+    runs-on: ${{ matrix.platform }}
 
     steps:
       - uses: actions/checkout@v4
@@ -23,7 +32,7 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: aarch64-apple-darwin,x86_64-apple-darwin
+          targets: ${{ matrix.target }}
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
@@ -45,5 +54,4 @@ jobs:
           releaseBody: 'Lihat assets di bawah buat install. Auto-update bakal otomatis ke user existing.'
           releaseDraft: false
           prerelease: false
-          args: --target universal-apple-darwin
-          updaterJsonPreferNsis: false
+          args: --target ${{ matrix.target }}

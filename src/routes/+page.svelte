@@ -12,6 +12,18 @@
   import { checkAndNotifyDueTasks } from "$lib/notifications";
   import { applyTheme, getStoredTheme, nextTheme, setTheme, type Theme } from "$lib/theme";
   import { checkForUpdate, downloadAndInstall } from "$lib/updater";
+  import {
+    LayoutGrid,
+    RotateCw,
+    Sun,
+    Moon,
+    Monitor,
+    Keyboard,
+    Settings,
+    Download,
+    Plus,
+    Sparkles,
+  } from "@lucide/svelte";
 
   let tasks = $state<Task[]>([]);
   let loading = $state(true);
@@ -220,8 +232,9 @@
 
 {#if updateBanner}
   <div class="bg-emerald-50 dark:bg-emerald-950 border-b border-emerald-200 dark:border-emerald-900 px-6 py-2.5 flex items-center justify-between gap-3">
-    <div class="text-xs text-emerald-900 dark:text-emerald-300">
-      🚀 Versi baru tersedia: <strong>v{updateBanner.version}</strong>
+    <div class="text-xs text-emerald-900 dark:text-emerald-300 inline-flex items-center gap-2">
+      <Sparkles size={14} strokeWidth={2} class="text-emerald-600 dark:text-emerald-400" />
+      Versi baru tersedia: <strong>v{updateBanner.version}</strong>
       {#if updateBanner.notes}
         <span class="text-emerald-700 dark:text-emerald-400">— {updateBanner.notes}</span>
       {/if}
@@ -250,7 +263,7 @@
     class="px-6 py-4 border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex items-center justify-between gap-4"
   >
     <div class="flex items-center gap-3">
-      <span class="text-xl">⚡</span>
+      <LayoutGrid size={20} strokeWidth={2} class="text-neutral-700 dark:text-neutral-300" />
       <h1 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Emen Kanban</h1>
       <span class="text-xs text-neutral-400 dark:text-neutral-500 font-medium">
         {tasks.length} task{tasks.length !== 1 ? "s" : ""}
@@ -271,50 +284,62 @@
       <button
         type="button"
         onclick={cycleTheme}
-        class="text-xs font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 px-2 py-1.5 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+        class="text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 p-1.5 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
         title="Toggle theme (t)"
+        aria-label="Toggle theme"
       >
-        {theme === "light" ? "☀️" : theme === "dark" ? "🌙" : "🖥️"}
+        {#if theme === "light"}
+          <Sun size={16} strokeWidth={2} />
+        {:else if theme === "dark"}
+          <Moon size={16} strokeWidth={2} />
+        {:else}
+          <Monitor size={16} strokeWidth={2} />
+        {/if}
       </button>
       <button
         type="button"
         onclick={manualCheckUpdate}
-        class="text-xs font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 px-2 py-1.5 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+        class="text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 p-1.5 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
         title="Cek update"
+        aria-label="Cek update"
       >
-        ⬇
+        <Download size={16} strokeWidth={2} />
       </button>
       <button
         type="button"
         onclick={() => (showSettings = true)}
-        class="text-xs font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 px-2 py-1.5 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+        class="text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 p-1.5 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
         title="Settings (⌘,)"
+        aria-label="Settings"
       >
-        ⚙️
+        <Settings size={16} strokeWidth={2} />
       </button>
       <button
         type="button"
         onclick={() => (showHelp = !showHelp)}
-        class="text-xs font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 px-2 py-1.5 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+        class="text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 p-1.5 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
         title="Shortcuts (?)"
+        aria-label="Shortcuts"
       >
-        ?
+        <Keyboard size={16} strokeWidth={2} />
       </button>
       <button
         type="button"
         onclick={loadTasks}
-        class="text-xs font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 px-2 py-1.5 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+        class="text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 p-1.5 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
         title="Refresh (r)"
+        aria-label="Refresh"
       >
-        ↻
+        <RotateCw size={16} strokeWidth={2} />
       </button>
       <button
         type="button"
         onclick={() => openCreate()}
-        class="text-xs font-medium text-white dark:text-neutral-900 bg-neutral-900 dark:bg-neutral-100 hover:bg-neutral-800 dark:hover:bg-neutral-200 px-3 py-1.5 rounded-md transition-colors"
+        class="text-xs font-medium text-white dark:text-neutral-900 bg-neutral-900 dark:bg-neutral-100 hover:bg-neutral-800 dark:hover:bg-neutral-200 px-3 py-1.5 rounded-md transition-colors inline-flex items-center gap-1.5"
         title="New task (n)"
       >
-        + Task Baru
+        <Plus size={14} strokeWidth={2.5} />
+        Task Baru
       </button>
     </div>
   </header>
@@ -335,10 +360,19 @@
       <div class="grid grid-cols-3 gap-4 h-full">
         {#each COLUMNS as column}
           {@const colTasks = tasksByStatus(column.id)}
+          {@const Icon = column.icon}
           <div class="flex flex-col bg-neutral-100/60 dark:bg-neutral-900/60 rounded-xl overflow-hidden">
             <div class="px-4 py-3 flex items-center justify-between">
               <div class="flex items-center gap-2">
-                <span class="text-base">{column.icon}</span>
+                <Icon
+                  size={14}
+                  strokeWidth={2.5}
+                  class={column.id === "todo"
+                    ? "text-neutral-500 dark:text-neutral-400"
+                    : column.id === "doing"
+                    ? "text-amber-500 dark:text-amber-400"
+                    : "text-emerald-500 dark:text-emerald-400"}
+                />
                 <h2 class="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
                   {column.label}
                 </h2>
