@@ -65,13 +65,10 @@ jobs:
 
           TAR_FILE="$BUNDLE_MACOS/Emen-Kanban.app.tar.gz"
 
-          # Sign pake cargo tauri signer
-          echo "$TAURI_SIGNING_PRIVATE_KEY" > /tmp/signing.key
+          # Sign pake env var TAURI_SIGNING_PRIVATE_KEY (auto-detected)
           cargo tauri signer sign \
-            --private-key-path /tmp/signing.key \
             --password "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD" \
             "$TAR_FILE"
-          rm /tmp/signing.key
 
           SIG_FILE="$TAR_FILE.sig"
           if [ ! -f "$SIG_FILE" ]; then
