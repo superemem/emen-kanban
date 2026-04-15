@@ -36,15 +36,17 @@ jobs:
       - name: Install frontend deps
         run: npm ci
 
-      - name: Build Tauri (with signing)
+      - name: Build Tauri
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: cargo tauri build --target aarch64-apple-darwin
 
-      - name: Verify artifacts + create release + upload all
+      - name: Create updater archive + sign + release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
           set -euo pipefail
 
@@ -52,24 +54,37 @@ jobs:
           BUNDLE_MACOS="src-tauri/target/aarch64-apple-darwin/release/bundle/macos"
           BUNDLE_DMG="src-tauri/target/aarch64-apple-darwin/release/bundle/dmg"
 
-          echo "=== Bundle contents (macos) ==="
+          echo "=== Bundle contents ==="
           ls -la "$BUNDLE_MACOS"
-          echo "=== Bundle contents (dmg) ==="
           ls -la "$BUNDLE_DMG"
 
-          DMG_FILE=$(ls "$BUNDLE_DMG"/*.dmg | head -1)
-          TAR_FILE="$BUNDLE_MACOS/Emen-Kanban.app.tar.gz"
-          SIG_FILE="$TAR_FILE.sig"
+          # Manually create .app.tar.gz buat updater
+          cd "$BUNDLE_MACOS"
+          tar -czf "Emen-Kanban.app.tar.gz" "Emen-Kanban.app"
+          cd -
 
+          TAR_FILE="$BUNDLE_MACOS/Emen-Kanban.app.tar.gz"
+
+          # Sign pake cargo tauri signer
+          echo "$TAURI_SIGNING_PRIVATE_KEY" > /tmp/signing.key
+          cargo tauri signer sign \
+            --private-key-path /tmp/signing.key \
+            --password "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD" \
+            "$TAR_FILE"
+          rm /tmp/signing.key
+
+          SIG_FILE="$TAR_FILE.sig"
           if [ ! -f "$SIG_FILE" ]; then
-            echo "❌ Sig file gak ada. Build mungkin gak signed."
+            echo "❌ Sig gak ke-generate"
+            ls -la "$BUNDLE_MACOS"
             exit 1
           fi
 
-          # Stage assets dengan nama final
+          # Stage assets
           STAGE_DIR="/tmp/release-stage"
           mkdir -p "$STAGE_DIR"
 
+          DMG_FILE=$(ls "$BUNDLE_DMG"/*.dmg | head -1)
           DMG_NAME="Emen-Kanban_${VERSION}_aarch64.dmg"
           TAR_NAME="Emen-Kanban_aarch64.app.tar.gz"
           SIG_NAME="Emen-Kanban_aarch64.app.tar.gz.sig"
@@ -100,14 +115,14 @@ jobs:
           echo "=== latest.json ==="
           cat "$STAGE_DIR/latest.json"
 
-          # Create release if gak ada, kalo ada lewat
+          # Create release
           if ! gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
             gh release create "$GITHUB_REF_NAME" \
               --title "Emen Kanban $GITHUB_REF_NAME" \
               --notes "Auto-generated release. App existing bakal auto-detect update."
           fi
 
-          # Upload semua assets
+          # Upload semua
           gh release upload "$GITHUB_REF_NAME" \
             "$STAGE_DIR/$DMG_NAME" \
             "$STAGE_DIR/$TAR_NAME" \
@@ -115,4 +130,4 @@ jobs:
             "$STAGE_DIR/latest.json" \
             --clobber
 
-          echo "✅ Done — release $GITHUB_REF_NAME live"
+          echo "✅ Done — release $GITHUB_REF_NAME live with all assets"
