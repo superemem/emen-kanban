@@ -46,3 +46,51 @@ jobs:
           releaseDraft: false
           prerelease: false
           args: --target aarch64-apple-darwin
+
+      - name: Upload .sig + generate latest.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          BUNDLE_DIR="src-tauri/target/aarch64-apple-darwin/release/bundle/macos"
+          SIG_FILE="${BUNDLE_DIR}/Emen-Kanban.app.tar.gz.sig"
+
+          if [ ! -f "$SIG_FILE" ]; then
+            echo "Sig file gak ada di: $SIG_FILE"
+            ls -la "$BUNDLE_DIR"
+            exit 1
+          fi
+
+          SIG_CONTENT=$(cat "$SIG_FILE")
+          VERSION="${GITHUB_REF_NAME#v}"
+          PUB_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          NOTES="Update v${VERSION} - lihat commit history buat detail."
+
+          # Upload sig as proper asset name (matching tar.gz)
+          SIG_ASSET_NAME="Emen-Kanban_aarch64.app.tar.gz.sig"
+          cp "$SIG_FILE" "/tmp/${SIG_ASSET_NAME}"
+          gh release upload "$GITHUB_REF_NAME" "/tmp/${SIG_ASSET_NAME}" --clobber
+
+          # Build latest.json
+          DOWNLOAD_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/Emen-Kanban_aarch64.app.tar.gz"
+
+          cat > /tmp/latest.json <<EOF
+          {
+            "version": "${VERSION}",
+            "notes": "${NOTES}",
+            "pub_date": "${PUB_DATE}",
+            "platforms": {
+              "darwin-aarch64": {
+                "signature": "${SIG_CONTENT}",
+                "url": "${DOWNLOAD_URL}"
+              }
+            }
+          }
+          EOF
+
+          echo "=== latest.json ==="
+          cat /tmp/latest.json
+
+          gh release upload "$GITHUB_REF_NAME" /tmp/latest.json --clobber
+          echo "✅ Uploaded sig + latest.json"
